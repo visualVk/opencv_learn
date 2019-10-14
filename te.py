@@ -1,3 +1,4 @@
+import math
 import unittest
 import cv2
 import matplotlib.pyplot as plt
@@ -116,7 +117,8 @@ class MyTestCase(unittest.TestCase):
         plt.show()
 
     def test_RGB2HSV(self):
-        red = np.uint8([[[178, 193, 219]]])
+        b,g,r = input('input b,g,r=').strip().split()
+        red = np.uint8([[[b, g, r]]])
         hsv_red = cv2.cvtColor(red, cv2.COLOR_BGR2HSV)
         print(hsv_red)
 
@@ -160,32 +162,33 @@ class MyTestCase(unittest.TestCase):
         # lower_red(RGB) (208,79,113)
         # upper (212,47,56)
         np.set_printoptions(threshold=np.inf)
-        image = cv2.imread("lib/stamp4.jpg")
-
+        image = cv2.imread("cut_image.png")
+        # 提取红色HSV
         hue_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         low_range = np.array([150, 103, 100])
         high_range = np.array([180, 255, 255])
         th = cv2.inRange(hue_image, low_range, high_range)
-        # cv2.imshow('th', th)
-        index1 = th == 255
+        # ret, binary = cv2.threshold(th, 0, 255, cv2.THRESH_BINARY)
 
+        # dilation = cv2.dilate(binary, kernel, iterations=1)
+        # cv2.imshow('binary',binary)
+        index1 = th == 255
+        # 颜色提取
         img = np.zeros(image.shape, np.uint8)
         img[:, :] = (255, 255, 255)
         img[index1] = image[index1]  # (0,0,255)
-        kernel = np.ones((3, 3), np.uint8)
-        dilation = cv2.dilate(img, kernel, iterations=1)
-        cv2.imshow(dilation)
+        # 膨胀
+        # kernel = np.ones((2, 2), np.uint8)
+        # dilate_img = cv2.dilate(img, kernel=kernel, iterations=1)
+        cv2.imwrite('dilatie_img.png', img)
         # cv2.imwrite('stamp4_extract.png', img)
         # cv2.imshow('original_img', image)
         # cv2.imshow('extract_img', img)
 
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
     # 比较相似度
     def test_compare_pic(self):
-        imageA = cv2.imread("lib/stamp2.png")
-        imageB = cv2.imread("extract_img.png")
+        imageA = cv2.imread("dilatie_img.png")
+        imageB = cv2.imread("stamp4_extract_cut.png")
 
         grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
         grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
@@ -193,10 +196,10 @@ class MyTestCase(unittest.TestCase):
         h2, w2 = grayB.shape
         print(grayA.shape)
         print(grayB.shape)
-        if grayA.shape < grayB.shape:
-            grayA = cv2.resize(grayA, (w2, h2))
+        if grayA.shape > grayB.shape:
+            grayA = cv2.resize(grayA, (w2, h2),interpolation=cv2.INTER_CUBIC)
         else:
-            grayB = cv2.resize(grayB, (w1, h1), interpolation=cv2.INTER_CUBIC)
+            grayB = cv2.resize(grayB, (w1, h1))
         # cv2.imwrite('grayB.png',grayB)
         cv2.imshow('grayB', grayB)
         cv2.imshow('grayA', grayA)
@@ -268,29 +271,154 @@ class MyTestCase(unittest.TestCase):
 
     def test_gradient(self):
         circle = cv2.imread('lib/stamp2.png')
-        sobelx = cv2.Sobel(circle,cv2.CV_64F,1,0,ksize=3)
+        sobelx = cv2.Sobel(circle, cv2.CV_64F, 1, 0, ksize=3)
         # 如果不进行绝对值，只有一边白
         sobelx = cv2.convertScaleAbs(sobelx)
-        sobely = cv2.Sobel(circle,cv2.CV_64F,0,1,ksize=3)
+        sobely = cv2.Sobel(circle, cv2.CV_64F, 0, 1, ksize=3)
         sobely = cv2.convertScaleAbs(sobely)
-        sobel = cv2.addWeighted(sobelx,0.5,sobely,0.5,0)
-        cv2.imshow('sobel',sobel)
+        sobel = cv2.addWeighted(sobelx, 0.5, sobely, 0.5, 0)
+        cv2.imshow('sobel', sobel)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
     def test_scharr(self):
         circle = cv2.imread('lib/stamp2.png')
-        scharrx = cv2.Scharr(circle,cv2.CV_64F,1,0)
+        scharrx = cv2.Scharr(circle, cv2.CV_64F, 1, 0)
         scharrx = cv2.convertScaleAbs(scharrx)
-        scharry = cv2.Scharr(circle,cv2.CV_64F,0,1)
+        scharry = cv2.Scharr(circle, cv2.CV_64F, 0, 1)
         scharry = cv2.convertScaleAbs(scharry)
-        scharr = cv2.addWeighted(scharrx,0.5,scharry,0.5,0)
-        cv2.imshow('scharr',scharr)
+        scharr = cv2.addWeighted(scharrx, 0.5, scharry, 0.5, 0)
+        cv2.imshow('scharr', scharr)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def test_os_tmpfile(self):
-        tempfile.m
-        print(file)
+    # 剪裁图片
+    def test_cut_pic(self):
+        img_org = cv2.imread("rotate_img.png")
+
+        hue_image = cv2.cvtColor(img_org, cv2.COLOR_BGR2HSV)
+        low_range = np.array([150, 103, 100])
+        high_range = np.array([180, 255, 255])
+        th = cv2.inRange(hue_image, low_range, high_range)
+        ret, binary = cv2.threshold(th, 0, 255, cv2.THRESH_BINARY)
+        # cv2.imshow('binary',binary)
+        kernel = np.ones((3, 3), np.uint8)
+        dilation = cv2.dilate(binary, kernel, iterations=1)
+        image, contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
+        if len(contours) > 0:
+            # cv2.boundingRect()返回轮廓矩阵的坐标值，四个值为x, y, w, h， 其中x, y为左上角坐标，w,h为矩阵的宽和高
+            boxes = [cv2.boundingRect(c) for c in contours]
+            box = boxes[-1]
+            x, y, w, h = box
+            # origin_pic = cv2.rectangle(img_org, (x, y), (x + w, y + h), (153, 153, 0), 2)
+            cv2.imshow('img_org', img_org)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+            cut_pic_1 = img_org[y:y + h, x:x + w]
+            # 将绘制的图像保存并展示
+            # cv2.imwrite('save_image.png', origin_pic)
+            cv2.imwrite('cut_image.png', cut_pic_1)
+            # for box in boxes:
+            #     x, y, w, h = box
+            #     # 绘制矩形框对轮廓进行定位
+            #     origin_pic = cv2.rectangle(img_org, (x, y), (x + w, y + h), (153, 153, 0), 2)
+            #     cv2.imshow('img_org',img_org)
+            #     cv2.waitKey(0)
+            #     cv2.destroyAllWindows()
+            #     cut_pic_1 = img_org[y:y + h, x:x + w]
+            #     # 将绘制的图像保存并展示
+            #     cv2.imwrite('save_image.png', origin_pic)
+            #     cv2.imwrite('cut_image.png', cut_pic_1)
+        return cut_pic_1, contours
+
+    # 旋转图片
+    def test_reto(self):
+        original_img = cv2.imread('a2.jpg')
+        # 基础处理
+        gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray_img, (9, 9), 0)  # 高斯模糊去噪（设定卷积核大小影响效果）
+        _, RedThresh = cv2.threshold(blurred, 165, 255, cv2.THRESH_BINARY)  # 设定阈值165（阈值影响开闭运算效果）
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))  # 定义矩形结构元素
+        closed = cv2.morphologyEx(RedThresh, cv2.MORPH_CLOSE, kernel)  # 闭运算（链接块）
+        opened = cv2.morphologyEx(closed, cv2.MORPH_OPEN, kernel)  # 开运算（去噪点）
+
+        image, contours, hierarchy = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.imwrite('findContours_rotate_img.png', image)
+        c = sorted(contours, key=cv2.contourArea, reverse=True)[0]
+        rect = cv2.minAreaRect(c)
+        # print(rect)
+        angle = rect[2]
+        box = np.int0(cv2.boxPoints(rect))
+        draw_img = cv2.drawContours(original_img.copy(), [box], -1, (0, 0, 255), 3)
+        r, c = original_img.shape[:2]
+        M = cv2.getRotationMatrix2D((c / 2, r / 2), angle, 1)
+        result_img = cv2.warpAffine(original_img, M, (c, r))
+        cv2.imwrite('rotate_img.png', result_img)
+
+    # # 傅里叶
+    # def test_fourier_demo(self):
+    #     # 1、灰度化读取文件，
+    #     img = cv2.imread('a1.jpg', 0)
+    #
+    #     # 2、图像延扩
+    #     h, w = img.shape[:2]
+    #     new_h = cv2.getOptimalDFTSize(h)
+    #     new_w = cv2.getOptimalDFTSize(w)
+    #     right = new_w - w
+    #     bottom = new_h - h
+    #     nimg = cv2.copyMakeBorder(img, 0, bottom, 0, right, borderType=cv2.BORDER_CONSTANT, value=0)
+    #     # cv2.imshow('new image', nimg)
+    #
+    #     # 3、执行傅里叶变换，并过得频域图像
+    #     f = np.fft.fft2(nimg)
+    #     fshift = np.fft.fftshift(f)
+    #     magnitude = np.log(np.abs(fshift))
+    #
+    #     # 二值化
+    #     magnitude_uint = magnitude.astype(np.uint8)
+    #     ret, thresh = cv2.threshold(magnitude_uint, 11, 255, cv2.THRESH_BINARY)
+    #     print(ret)
+    #
+    #     # cv2.imshow('thresh', thresh)
+    #     # print(thresh.dtype)
+    #     # 霍夫直线变换
+    #     lines = cv2.HoughLinesP(thresh, 2, np.pi / 180, 30, minLineLength=40, maxLineGap=100)
+    #     # print(len(lines))
+    #
+    #     # 创建一个新图像，标注直线
+    #     lineimg = np.ones(nimg.shape, dtype=np.uint8)
+    #     lineimg = lineimg * 255
+    #
+    #     piThresh = np.pi / 180
+    #     pi2 = np.pi / 2
+    #     print(piThresh)
+    #
+    #     for line in lines:
+    #         x1, y1, x2, y2 = line[0]
+    #         cv2.line(lineimg, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    #         if x2 - x1 == 0:
+    #             continue
+    #         else:
+    #             theta = (y2 - y1) / (x2 - x1)
+    #         if abs(theta) < piThresh or abs(theta - pi2) < piThresh:
+    #             continue
+    #         else:
+    #             print(theta)
+    #
+    #     angle = math.atan(theta)
+    #     print(angle)
+    #     angle = angle * (180 / np.pi)
+    #     print(angle)
+    #     angle = (angle - 90) / (w / h)
+    #     print(angle)
+    #
+    #     center = (w // 2, h // 2)
+    #     M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    #     rotated = cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    #     # cv2.imshow('line image', lineimg)
+    #     # cv2.imshow('rotated', rotated)
+    #     cv2.imwrite('rotated_img.png',rotated)
+
+
 if __name__ == '__main__':
     unittest.main()
