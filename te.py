@@ -117,7 +117,7 @@ class MyTestCase(unittest.TestCase):
         plt.show()
 
     def test_RGB2HSV(self):
-        b,g,r = input('input b,g,r=').strip().split()
+        b, g, r = input('input b,g,r=').strip().split()
         red = np.uint8([[[b, g, r]]])
         hsv_red = cv2.cvtColor(red, cv2.COLOR_BGR2HSV)
         print(hsv_red)
@@ -188,7 +188,7 @@ class MyTestCase(unittest.TestCase):
     # 比较相似度
     def test_compare_pic(self):
         imageA = cv2.imread("dilatie_img.png")
-        imageB = cv2.imread("stamp4_extract_cut.png")
+        imageB = cv2.imread("dilatie_img.png")
 
         grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
         grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
@@ -196,10 +196,10 @@ class MyTestCase(unittest.TestCase):
         h2, w2 = grayB.shape
         print(grayA.shape)
         print(grayB.shape)
-        if grayA.shape > grayB.shape:
-            grayA = cv2.resize(grayA, (w2, h2),interpolation=cv2.INTER_CUBIC)
+        if grayA.shape < grayB.shape:
+            grayA = cv2.resize(grayA, (w2, h2))
         else:
-            grayB = cv2.resize(grayB, (w1, h1))
+            grayB = cv2.resize(grayB, (w1, h1), interpolation=cv2.INTER_CUBIC)
         # cv2.imwrite('grayB.png',grayB)
         cv2.imshow('grayB', grayB)
         cv2.imshow('grayA', grayA)
@@ -333,7 +333,7 @@ class MyTestCase(unittest.TestCase):
 
     # 旋转图片
     def test_reto(self):
-        original_img = cv2.imread('a2.jpg')
+        original_img = cv2.imread('lib/stamp4_lll.jpg')
         # 基础处理
         gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray_img, (9, 9), 0)  # 高斯模糊去噪（设定卷积核大小影响效果）
@@ -344,7 +344,7 @@ class MyTestCase(unittest.TestCase):
 
         image, contours, hierarchy = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.imwrite('findContours_rotate_img.png', image)
-        c = sorted(contours, key=cv2.contourArea, reverse=True)[0]
+        c = sorted(contours, key=cv2.contourArea, reverse=True)[1]
         rect = cv2.minAreaRect(c)
         # print(rect)
         angle = rect[2]
